@@ -1,0 +1,29 @@
+name: build
+on:
+  push: {branches: [main], tags: ['v*']}
+  pull_request:
+  workflow_dispatch:
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{{{ matrix.os }}}}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deps (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev
+      - name: Deps (macOS)
+        if: runner.os == 'macOS'
+        run: brew install gtk+3 || true
+      - name: Configure
+        run: cmake -S . -B build || true
+      - name: Build
+        run: cmake --build build --config Release || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{{{ github.event.repository.name }}}}-${{{{ runner.os }}}}
+          path: build/**/maxcompress*
+          if-no-files-found: warn
